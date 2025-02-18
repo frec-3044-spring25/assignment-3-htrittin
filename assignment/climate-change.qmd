@@ -87,28 +87,39 @@ Describe the data set to the best of your ability, given the documentation provi
 - Describe the class of each column and what units it is measured in. 
 - What is the difference between "global temperature" and "global temperature anomaly"? 
 
-**Answer 3:** The data is from National Aeronautics and Space Administration (NASA) and Goddard Institute for Space Studies (GISS). The year column represents the year measured in time. The Lowess(5) column is the change in global surface temperature in Celsius using LOWESS to smooth the data closer to estimated data points.The column with No_Smoothing is the change in global surface temperature in Celsius no using Lowess to smooth the data. Global temperature is the average global surface temperature. The global temperature anomaly is the difference from the average global temperature baseline.
+**Answer 3:** The data is from National Aeronautics and Space Administration (NASA) and Goddard Institute for Space Studies (GISS). The year column represents the year measured in time. The Lowess(5) column is the change in global surface temperature in Celsius using LOWESS to smooth the data closer to estimated data points.The column with No_Smoothing is the change in global surface temperature in Celsius no using Lowess to smooth the data. Global temperature is the average global surface temperature. The global temperature anomaly is the difference from the average long-term global temperature.
 
 
 **Question 4:**
 ```{r}
 globaltemp <- read_table("https://data.giss.nasa.gov/gistemp/graphs/graph_data/Global_Mean_Estimates_based_on_Land_and_Ocean_Data/graph.txt",
-                         col_names = c("year", "No_smoothing", "Lowess"))
+                         col_names = c("year", "anual_mean", "Lowess"))
 
 globaltemp <- globaltemp[-c(1,2,3,4),]
 
-
+globaltemp <- transform(globaltemp, year =  as.numeric(year), anual_mean = as.numeric(anual_mean), Lowess = as.numeric(Lowess)) 
 ```
 
 Construct the necessary R code to import and prepare for plotting the following data set: <https://data.giss.nasa.gov/gistemp/graphs/graph_data/Global_Mean_Estimates_based_on_Land_and_Ocean_Data/graph.txt>
 
 You'll need to determine the file's delimiter and any comments or skips. You will also need to be sure that you have column names. You will not directly use the code above to read the CO2 data, but that code provides helpful tips for reading the data.
 
-**Answer 4:**
+**Answer 4:** I put the code right after question 4
 
 **Question 5:**
+```{r}
+globaltemp |>
+ggplot(aes(x = year, y = anual_mean)) + 
+  geom_line() + 
+  geom_point()+
+  theme_bw()+
+  labs(x = "Year", y = "Change in Global mean temperature (C)")
 
-Plot the trend in global mean temperatures over time.  Describe what you see in the plot and how you interpret the patterns you observe.
+```
+
+Plot the trend in global mean temperatures over time.  Describe what you see in the plot and how you interpret the patterns you observe. 
+The earth has natural patterns of increasing and decreasing global temperature. We can see the 
+overall trend is a increase in global temperature through time.
 
 **Answer 5:**
 
@@ -122,18 +133,41 @@ You will use rolling averages to help you explore the evidence for a pause. Sinc
 
 Use a search engine (e.g., Google) or a chat LLM to find out how to calculate a rolling average in R. What search term or chat LLM prompt did you use?  What website or answer from the chat LLM did you end up using?  How much did you need to modify the code from the website or chat LLM to answer the question successfully?
 
-**Answer 6:**
+**Answer 6:** I went to google and searched how to do rolling averages in r. I had to look at multiple different websites to figure out the best way todo get a rolling mean without making it too complicated. I ended up using Statology.org specifically the article "How to Calculate a Rolling Average in R (With Example)" by Zach Bobbitt. I did'nt have to change his code much I just used different data and and calculated a 10 year rolling average to test if the function would work.
+```{r}
+library(dplyr)
+install.packages("zoo")
+library(zoo)
+globaltemp |>
+  mutate(rollavg_10 = rollmean(anual_mean, k = 10, fill = NA, align = 'right'))
+```
 
 **Question 7:**
 
 - What is the meaning of "5-year average" vs. "annual average"?
 - Create a data frame from the annual temperature anomaly data (from Question 4) with three new columns: 5-year running averages, 10-year running averages, and 20-year running averages.
+```{r}
+globaltemp <- globaltemp |>
+  mutate(rollavg_5 = rollmean(anual_mean, k = 5, fill = NA, align = 'right'),
+         rollavg_10 = rollmean(anual_mean, k = 10, fill = NA, align = 'right'),
+         rollavg_20 = rollmean(anual_mean, k = 20, fill = NA, align = 'right'))
+```
 
-**Answer 7:**
+**Answer 7:** 5 year average means the average of global temperatures taken in 5 years. Annual Average means the annual surface temperature for one year.
 
 **Question 8:**
 
 Plot the different averages on the *same plot* and describe what differences you see and why.  
+```{r}
+
+
+globaltemp_plot_long <- globaltemp |> 
+  pivot_longer(cols = -year:-Lowess, names_to = "rolling_avgs_id", values_to = "rolling_avgs_value")
+
+ggplot(globaltemp_plot_long, aes(x = year, y = rolling_avgs_value, color = rolling_avgs_id)) + 
+  geom_line() + 
+  labs(x = "Year", y = "Change in Global mean temperature (C)")
+```
 
 **Answer 8:**
 
