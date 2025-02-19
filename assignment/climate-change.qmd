@@ -108,8 +108,8 @@ You'll need to determine the file's delimiter and any comments or skips. You wil
 
 **Question 5:**
 ```{r}
-globaltemp |>
-ggplot(aes(x = year, y = anual_mean)) + 
+
+ggplot(globaltemp, aes(x = year, y = anual_mean)) + 
   geom_line() + 
   geom_point()+
   theme_bw()+
@@ -165,17 +165,18 @@ globaltemp_plot_long <- globaltemp |>
   pivot_longer(cols = -year:-Lowess, names_to = "rolling_avgs_id", values_to = "rolling_avgs_value")
 
 ggplot(globaltemp_plot_long, aes(x = year, y = rolling_avgs_value, color = rolling_avgs_id)) + 
-  geom_line() + 
+  geom_line() +
+  theme_bw()+
   labs(x = "Year", y = "Change in Global mean temperature (C)")
 ```
 
-**Answer 8:**
+**Answer 8:** The 5 year rolling average seems to fluctuate more than the 10 year rolling average. The 10 year rolling average fluctuates more than the 20 year rolling average. The 20 year rolling average is pretty smooth and doesn't have as many extreme ups and downs.The 5 year rolling average seems to have higher temperature change for the most part than the other two averages. This is because it is more sensitive to more recent data because it isn't averaging out a large data frame. This indicates that recent temperatures have been higher so the 5 year rolling average will reflect this. The 10 and 20 year rolling average take the averages of years farther past which would lower their change in global mean temperature.
 
 **Question 9:**
 
 By examining the data here, what evidence do you find or not find for such a pause? 
 
-**Answer 9:**
+**Answer 9:** The articles said the "pause" started around 1998. When I look at the data I see a upward trend in the change in global temperature continuing through 1998. Some of the articles said their was a smaller upward trend but I don't see that either.Through around 1980s I see a continual increase in change in global temperature that is steeper than the past years. In past years change in global temperature ebbed and flowed. In the most recent 50 year there has just been an increase. I see not evidence supporting a pause.
 
 ## Longer term trends in CO2 Records
 
@@ -217,9 +218,56 @@ Your answer to Question 10 is going to be a mix of code chunks and text that you
 
 **Answer 10:**
 
+
+ The first column is depth in meters which is the depth of the icecore where they took the sample. The second column is ice age in years BP (before present which is referenced as 1950). This is the age of the ice sat the depth of the sample. The next column is avg_air_age measured in years bp. This is the age of the air in the ice bubbles at the depth. Last column is CO2 concentration which is measured in ppmv parts per million by volume. This measure the concentration of CO2 trapped in the air bubbles in the ice at the depth of the sample.
+ 
+ The age difference between air and ice can be around 6000 years. The ages of ice and air can vary between 1000 to 5000 year for each data point in depth. This is low temporal resolution because frequency of the data points are farther apart.
+ 
+ Recent CO2 levels have been increasing faster and with less variation that historically. Historically there where ebes and flows in CO2 levels but recently it has been mostly a consistent upwards trend. I see this when looking at my plot with the combined vostok.icecore and Mauna Loa data.There are steady ups and downs in Co2 concentration than in the most recent years it sky rockets. 
 ```{r}
+vostok.icecore <-  read_table("vostok.icecore.co2", 
+                  comment="#",
+                  col_names = c("Depth_m", "Ice_age_yrBP", "avg_air_age_yrBP",
+                                "Co2_conc_ppmv"))
+vostok.icecore <- vostok.icecore[-c(1:20),]
 
+vostok.icecore <- transform(vostok.icecore, Depth_m =  as.numeric(Depth_m), 
+                            Ice_age_yrBP = as.numeric(Ice_age_yrBP),
+                            avg_air_age_yrBP = as.numeric(avg_air_age_yrBP),
+                            Co2_conc_ppmv = as.numeric(Co2_conc_ppmv))
+                            
 
+vostok.icecore <- vostok.icecore |>
+  mutate(ice_year = 1950 - Ice_age_yrBP,
+         air_year = 1950 - avg_air_age_yrBP) |>
+  arrange(air_year)
+
+#This plot uses the calender year from air because the co2 concentraion is taken from the air bubbles so I thought it would better allign.
+ggplot(vostok.icecore, aes(x = ice_year, y = Co2_conc_ppmv)) + 
+  geom_line() +
+  theme_bw()+
+  labs(x = "Calender Year", y = "CO2 Concentration (ppmv)")
+
+  
+```
+
+```{r}
+vostok.icecore2 <- vostok.icecore |>
+  select(air_year, Co2_conc_ppmv) |>
+  rename(year = air_year)
+
+co2_2 <- co2 |>
+  select(year,monthly_average)|>
+  rename(Co2_conc_ppmv = monthly_average)
+
+combined_data <- bind_rows(vostok.icecore2, co2_2) |>
+  arrange(year)
+
+ggplot(combined_data, aes(x = year, y = Co2_conc_ppmv))+
+  geom_line() +
+  theme_bw()+
+  labs(x = "Calender Year", y = "CO2 Concentration (ppmv)")
+  
 ```
 
 # Render and committing
@@ -230,5 +278,9 @@ Remember to Render your document as HTML and comment+push to GitHub your code an
 
 Include citation of any AI-generated assistance or discussion with classmates (per policy in syllabus). Proper documentation of AI-generated assistance includes the prompt, the source (e.g., ChatGPT), and the significant parts of the response.  Proper documentation of discussion with classmates include listing their names and the components discussed.  
 
+For question 4 I looked up how to remove rows because I could'nt find anything that would work in the book. I used this https://stackoverflow.com/questions/12328056/how-do-i-delete-rows-in-a-data-frame to figure out a way to remove the rows.
 
+I also worked with Mel White and Sara Walker on question 4 to figure out how to name the columns because I kept getting errors.
+
+I worked with Sara Walker on question 10 again working to read in the data correctly.I also used the code I used in question 4 to remove the columns.
 
